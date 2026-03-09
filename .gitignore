@@ -1,5 +1,62 @@
+# Build directories
 build/
+cmake-build-*/
+out/
+bin/
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CMakeConfigureLog.yaml
+*.cmake
+
+# Ninja build files
+.ninja_deps
+.ninja_log
+build.ninja
+rules.ninja
+
+# Compiled executables
 *.exe
+*.dll
+*.so
+*.dylib
+
+# Object files
 *.o
 *.obj
+*.lib
+*.a
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Application specific
+debug.txt
+imgui.ini
+*.log
+
+# Environment and secrets
 .env
+.env.local
+.env.*.local
+secrets.json
+config.json
+
+# Temporary files
+*.tmp
+*.temp
