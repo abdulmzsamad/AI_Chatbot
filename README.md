@@ -87,7 +87,8 @@ ai-chatbot/
 
 ## Roadmap
 - [x] Refactor main.cpp into separate classes
-- [ ] Add GUI interface
+- [x] Add GUI interface
+- [ ] Give the chatbot its own personality
 - [ ] Save and load conversation history
 
 ## License
