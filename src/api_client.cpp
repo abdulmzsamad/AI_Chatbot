@@ -94,5 +94,6 @@ std::string apiKey = std::string(apiKeyEnv);
         return unescaped;
     }
 
+    std::cout << "Raw response: " << response << std::endl;
     return "Error: Could not parse response";
 }

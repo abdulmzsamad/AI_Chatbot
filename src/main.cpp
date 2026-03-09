@@ -2,6 +2,7 @@
 #include <string>
 #include "api_client.h"
 #include "conversation.h"
+#include "file_reader.h"
 
 int main() {
     Conversation conv;
@@ -36,26 +37,14 @@ int main() {
 
         // Read file command — usage: read C:/path/to/file.txt
         if (input.substr(0, 5) == "read ") {
-            std::string filepath = input.substr(5); // everything after "read "
-            std::string fileContent = readFile(filepath);
+            std::string filepath = input.substr(5);
+            std::string reply = FileReader::handleReadCommand(filepath, conv);
 
-            if (fileContent.substr(0, 5) == "Error") {
-                std::cout << fileContent << "\n\n";
+            if (reply.substr(0, 5) == "Error") {
+                std::cout << reply << "\n\n";
                 continue;
             }
 
-            // Add file content to conversation
-            std::string message = "I'm sharing a file with you called '" 
-                                + filepath + "'. Here is its content:\n\n" 
-                                + fileContent 
-                                + "\n\nPlease confirm you have read it and wait for my question.";
-
-            conv.addMessage("user", message);
-            std::cout << "Bot: thinking...\r";
-            std::cout.flush();
-
-            std::string reply = ApiClient::send(conv.getHistory());
-            conv.addMessage("assistant", reply);
             std::cout << "Bot: " << reply << "\n\n";
             continue;
         }

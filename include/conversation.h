@@ -14,7 +14,4 @@ public:
     void clear();
 private:
     std::vector<Message> history;
-};
-
-// Standalone helper function
-std::string readFile(const std::string& filepath);  
+};  
