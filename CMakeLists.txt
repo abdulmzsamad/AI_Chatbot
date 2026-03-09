@@ -24,7 +24,7 @@ set(IMGUI_SOURCES
 # Your source files
 file(GLOB SOURCES "src/*.cpp")
 
-add_executable(chatbot WIN32 ${SOURCES} ${IMGUI_SOURCES})
+add_executable(chatbot ${SOURCES} ${IMGUI_SOURCES})
 
 target_link_libraries(chatbot
     CURL::libcurl

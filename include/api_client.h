@@ -2,10 +2,10 @@
 #define API_CLIENT_H
 
 #include <winsock2.h>
+#include <curl/curl.h>
 #include <string>
 #include <vector>
 #include <functional>
-#include <curl/curl.h>
 #include "conversation.h"
 
 class ApiClient {
@@ -15,12 +15,13 @@ public:
                               std::function<void(const std::string&)> onChunk,
                               std::function<void()> onDone);
 
-    // Call once at startup to initialize persistent connection
-    static void init();
-    static void cleanup();
+    static bool useOllama;
+    static std::string ollamaModel;
 
 private:
-    static CURL* curlHandle; // persistent handle
+    static void sendOllamaStreaming(const std::vector<Message>& history,
+                                    std::function<void(const std::string&)> onChunk,
+                                    std::function<void()> onDone);
 };
 
 #endif

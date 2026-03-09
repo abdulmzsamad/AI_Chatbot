@@ -19,13 +19,15 @@ public:
 
 private:
     Conversation conv;
+    bool refocusInput = false;
+    bool openModelPopup = false;
     std::vector<std::string> messages;
     char inputBuf[512] = "";
     std::atomic<bool> isWaiting{false};
     std::atomic<bool> isStreaming{false};
     std::string streamingMessage;
     std::mutex streamMutex;
-
+    void renderHeader();
     void renderChatHistory();
     void renderInputBox();
     void sendMessage(const std::string& input);
@@ -40,6 +42,7 @@ private:
         }
         return DefWindowProc(hWnd, msg, wParam, lParam);
     }
+    
 };
 
 #endif
