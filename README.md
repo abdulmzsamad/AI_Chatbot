@@ -72,23 +72,39 @@ Bot: The file contains...
 ```
 ai-chatbot/
 ├── src/
-│   ├── main.cpp          - Entry point, starts the chatbot
-│   ├── chatbot.cpp       - Chat loop and command handling
-│   ├── api_client.cpp    - Gemini API communication
-│   ├── conversation.cpp  - Chat history management
-│   └── file_reader.cpp   - File reading functionality
+│   ├── main.cpp              - Entry point, starts the application
+│   ├── gui.cpp               - GUI rendering, chat bubbles, particle system
+│   ├── api_client.cpp        - Gemini and Ollama API communication
+│   ├── conversation.cpp      - Chat history management
+│   ├── file_reader.cpp       - File reading functionality
+│   └── markdown_parser.cpp   - Strips markdown from API responses
 ├── include/
-│   ├── chatbot.h
+│   ├── gui.h
 │   ├── api_client.h
 │   ├── conversation.h
-│   └── file_reader.h
-└── CMakeLists.txt
+│   ├── file_reader.h
+│   └── markdown_parser.h
+├── lib/
+│   ├── imgui.h               - ImGui core (download separately)
+│   ├── imgui.cpp
+│   ├── imgui_*.cpp
+│   └── backends/
+│       ├── imgui_impl_opengl3.h
+│       ├── imgui_impl_opengl3.cpp
+│       ├── imgui_impl_win32.h
+│       └── imgui_impl_win32.cpp
+├── .env.example              - Environment variable template
+├── .gitignore
+├── CMakeLists.txt
+└── README.md
 ```
 
 ## Roadmap
 - [x] Refactor main.cpp into separate classes
-- [x] Add GUI interface
-- [ ] Give the chatbot its own personality
+- [x] Add GUI interface with ImGui
+- [x] Add streaming responses
+- [x] Add Ollama support for local testing
+- [x] Add markdown parser
 - [ ] Save and load conversation history
 
 ## License
