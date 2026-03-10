@@ -109,7 +109,7 @@ void GUI::sendMessage(const std::string& input) {
         std::string fullReply;
 
         ApiClient::sendStreaming(
-            conv.getHistory(),
+            conv,
             [this, &fullReply](const std::string& chunk) {
     if (chunk.find("RESOURCE_EXHAUSTED") != std::string::npos ||
         chunk.find("quota") != std::string::npos) {
@@ -128,8 +128,28 @@ void GUI::sendMessage(const std::string& input) {
     messages.back() += strippedChunk;
 },
             [this, &fullReply]() {
-    std::string stripped = MarkdownParser::strip(fullReply);
+    // Format numbered lists in the complete response
+    std::string formatted;
+    for (size_t i = 0; i < fullReply.size(); i++) {
+        if (i > 0 && isdigit((unsigned char)fullReply[i])) {
+            size_t j = i;
+            while (j < fullReply.size() && isdigit((unsigned char)fullReply[j])) j++;
+           if (j < fullReply.size() && fullReply[j] == '.' && fullReply[i - 1] != '\n') {
+                // Only add newline, not double newline
+                if (i > 1 && fullReply[i - 2] != '\n') {
+                    formatted += '\n';
+                }
+            }
+        }
+        formatted += fullReply[i];
+    }
+
+    std::string stripped = MarkdownParser::strip(formatted);
     conv.addMessage("assistant", stripped);
+    {
+        std::lock_guard<std::mutex> lock(streamMutex);
+        messages.back() = "Bot: " + stripped;
+    }
     isStreaming = false;
     isWaiting = false;
 }
@@ -291,7 +311,7 @@ void GUI::renderHeader() {
     draw->AddCircleFilled(dotPos, 12.0f, glowColor);
 
     // Dropdown button — inside header
-    ImGui::SetCursorPos(ImVec2(io.DisplaySize.x - 275.0f, 13.0f));
+    ImGui::SetCursorPos(ImVec2(io.DisplaySize.x - 255.0f, 13.0f));
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 8.0f);
     ImGui::PushStyleColor(ImGuiCol_Button,
         ApiClient::useOllama ?
@@ -309,9 +329,11 @@ void GUI::renderHeader() {
     std::string buttonLabel = ApiClient::useOllama ?
         "Ollama: " + ApiClient::ollamaModel :
         "Gemini 2.5";
-    buttonLabel += " v";
+    // Pad label so arrow appears at right end
+    while (buttonLabel.size() < 18) buttonLabel += " ";
+    buttonLabel += "▼";
 
-    if (ImGui::Button(buttonLabel.c_str(), ImVec2(220.0f, 34.0f))) {
+    if (ImGui::Button(buttonLabel.c_str(), ImVec2(200.0f, 40.0f))) {
         openModelPopup = true;  // set flag instead of OpenPopup;
     }
     ImGui::PopStyleColor(3);
@@ -337,7 +359,7 @@ void GUI::renderHeader() {
 
     // Popup OUTSIDE child window
     ImGui::SetNextWindowPos(ImVec2(
-        winPos.x + io.DisplaySize.x - 165.0f,
+        winPos.x + io.DisplaySize.x - 200.0f,
         winPos.y + 61.0f
     ));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 8.0f);
@@ -365,18 +387,13 @@ void GUI::renderHeader() {
 
         static const char* ollamaModels[] = {
             "llama3.2",
-            "llama3",
-            "mistral",
-            "gemma2:2b",
-            "gemma2",
-            "phi3",
-            "codellama"
         };
 
         for (const char* model : ollamaModels) {
             bool selected = ApiClient::useOllama &&
                             ApiClient::ollamaModel == model;
-            if (ImGui::Selectable(model, selected)) {
+            std::string label = std::string("  ") + model;
+            if (ImGui::Selectable(label.c_str(), selected)) {
                 ApiClient::useOllama = true;
                 ApiClient::ollamaModel = model;
             }

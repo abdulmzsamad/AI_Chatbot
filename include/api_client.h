@@ -10,8 +10,8 @@
 
 class ApiClient {
 public:
-    static std::string send(const std::vector<Message>& history);
-    static void sendStreaming(const std::vector<Message>& history,
+    static std::string send(const Conversation& conv);
+    static void sendStreaming(const Conversation& conv,
                               std::function<void(const std::string&)> onChunk,
                               std::function<void()> onDone);
 
@@ -19,7 +19,7 @@ public:
     static std::string ollamaModel;
 
 private:
-    static void sendOllamaStreaming(const std::vector<Message>& history,
+    static void sendOllamaStreaming(const Conversation& conv,
                                     std::function<void(const std::string&)> onChunk,
                                     std::function<void()> onDone);
 };

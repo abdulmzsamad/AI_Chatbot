@@ -1,4 +1,6 @@
-#pragma once
+#ifndef CONVERSATION_H
+#define CONVERSATION_H
+
 #include <string>
 #include <vector>
 
@@ -9,9 +11,15 @@ struct Message {
 
 class Conversation {
 public:
+    Conversation();
     void addMessage(const std::string& role, const std::string& content);
     const std::vector<Message>& getHistory() const;
+    const std::string& getSystemPrompt() const;
     void clear();
+
 private:
     std::vector<Message> history;
-};  
+    std::string systemPrompt;
+};
+
+#endif

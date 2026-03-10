@@ -36,7 +36,7 @@
         std::cout << "Bot: thinking...\r";
         std::cout.flush();
 
-        std::string reply = ApiClient::send(conv.getHistory());
+        std::string reply = ApiClient::send(conv);
         conv.addMessage("assistant", reply);
 
         return reply;

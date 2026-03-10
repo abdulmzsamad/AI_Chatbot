@@ -5,6 +5,7 @@
 #include <string>
 #include <cstdlib>
 #include <functional>
+#include <cctype>
 
 // ─── Static member definitions ─────────────────────────────────────────────────
 bool ApiClient::useOllama = false;
@@ -27,6 +28,23 @@ static std::string escapeJson(const std::string& input) {
         else                output += c;
     }
     return output;
+}
+
+
+static std::string unescapeChunks(const std::string& text) {
+    std::string unescaped;
+    for (size_t i = 0; i < text.size(); i++) {
+        if (text[i] == '\\' && i + 1 < text.size()) {
+            char next = text[i + 1];
+            if (next == 'n')      { unescaped += '\n'; i++; }
+            else if (next == 't') { unescaped += ' ';  i++; }
+            else if (next == '"') { unescaped += '"';  i++; }
+            else                  { unescaped += text[i]; }
+        } else {
+            unescaped += text[i];
+        }
+    }
+    return unescaped;
 }
 
 // ─── Gemini streaming callback ─────────────────────────────────────────────────
@@ -68,14 +86,7 @@ static size_t StreamCallback(void* contents, size_t size, size_t nmemb, StreamDa
                     else end++;
                 }
                 std::string text = json.substr(start, end - start);
-                std::string unescaped;
-                for (size_t i = 0; i < text.size(); i++) {
-                    if (text[i] == '\\' && i + 1 < text.size() && text[i+1] == 'n') {
-                        unescaped += '\n'; i++;
-                    } else {
-                        unescaped += text[i];
-                    }
-                }
+                std::string unescaped = unescapeChunks(text);
                 if (!unescaped.empty()) data->onChunk(unescaped);
             }
         }
@@ -99,7 +110,6 @@ static size_t OllamaStreamCallback(void* contents, size_t size, size_t nmemb, Ol
         std::string line = data->buffer.substr(0, pos);
         data->buffer = data->buffer.substr(pos + 1);
 
-        // Chat API uses "content" field instead of "response"
         size_t contentPos = line.find("\"content\":\"");
         if (contentPos != std::string::npos) {
             size_t start = contentPos + 11;
@@ -110,29 +120,28 @@ static size_t OllamaStreamCallback(void* contents, size_t size, size_t nmemb, Ol
                 else end++;
             }
             std::string text = line.substr(start, end - start);
-            std::string unescaped;
-            for (size_t i = 0; i < text.size(); i++) {
-                if (text[i] == '\\' && i + 1 < text.size() && text[i+1] == 'n') {
-                    unescaped += '\n'; i++;
-                } else {
-                    unescaped += text[i];
-                }
-            }
-            if (!unescaped.empty()) {
-                data->onChunk(unescaped);
-            }
+            std::string unescaped = unescapeChunks(text);
+            if (!unescaped.empty()) data->onChunk(unescaped);
         }
     }
     return totalSize;
 }
 
 // ─── Gemini send (non-streaming) ───────────────────────────────────────────────
-std::string ApiClient::send(const std::vector<Message>& history) {
+std::string ApiClient::send(const Conversation& conv) {
     CURL* curl = curl_easy_init();
     if (!curl) return "Error: Failed to initialize CURL";
 
+    const std::vector<Message>& history = conv.getHistory();
+    const std::string& systemPrompt = conv.getSystemPrompt();
+
     std::ostringstream json;
-    json << R"({"contents":[)";
+    json << "{";
+    if (!systemPrompt.empty()) {
+        json << "\"system_instruction\":{\"parts\":[{\"text\":\""
+             << escapeJson(systemPrompt) << "\"}]},";
+    }
+    json << "\"contents\":[";
     for (size_t i = 0; i < history.size(); i++) {
         if (i > 0) json << ",";
         std::string role = history[i].role == "assistant" ? "model" : "user";
@@ -179,33 +188,34 @@ std::string ApiClient::send(const std::vector<Message>& history) {
             else end++;
         }
         std::string result = response.substr(start, end - start);
-        std::string unescaped;
-        for (size_t i = 0; i < result.size(); i++) {
-            if (result[i] == '\\' && i + 1 < result.size() && result[i+1] == 'n') {
-                unescaped += '\n'; i++;
-            } else {
-                unescaped += result[i];
-            }
-        }
+        std::string unescaped = unescapeChunks(result);
         return unescaped;
     }
     return "Error: Could not parse response";
 }
 
 // ─── Gemini streaming ──────────────────────────────────────────────────────────
-void ApiClient::sendStreaming(const std::vector<Message>& history,
+void ApiClient::sendStreaming(const Conversation& conv,
                                std::function<void(const std::string&)> onChunk,
                                std::function<void()> onDone) {
     if (useOllama) {
-        sendOllamaStreaming(history, onChunk, onDone);
+        sendOllamaStreaming(conv, onChunk, onDone);
         return;
     }
 
     CURL* curl = curl_easy_init();
     if (!curl) { onDone(); return; }
 
+    const std::vector<Message>& history = conv.getHistory();
+    const std::string& systemPrompt = conv.getSystemPrompt();
+
     std::ostringstream json;
-    json << R"({"contents":[)";
+    json << "{";
+    if (!systemPrompt.empty()) {
+        json << "\"system_instruction\":{\"parts\":[{\"text\":\""
+             << escapeJson(systemPrompt) << "\"}]},";
+    }
+    json << "\"contents\":[";
     for (size_t i = 0; i < history.size(); i++) {
         if (i > 0) json << ",";
         std::string role = history[i].role == "assistant" ? "model" : "user";
@@ -242,16 +252,23 @@ void ApiClient::sendStreaming(const std::vector<Message>& history,
 }
 
 // ─── Ollama streaming ──────────────────────────────────────────────────────────
-void ApiClient::sendOllamaStreaming(const std::vector<Message>& history,
+void ApiClient::sendOllamaStreaming(const Conversation& conv,
                                      std::function<void(const std::string&)> onChunk,
                                      std::function<void()> onDone) {
     CURL* curl = curl_easy_init();
     if (!curl) { onDone(); return; }
 
-    // Use Ollama chat API instead of generate API
-    // This handles conversation history properly
+    const std::vector<Message>& history = conv.getHistory();
+    const std::string& systemPrompt = conv.getSystemPrompt();
+
     std::ostringstream json;
     json << "{\"model\":\"" << ollamaModel << "\",\"messages\":[";
+
+    if (!systemPrompt.empty()) {
+        json << "{\"role\":\"system\",\"content\":\""
+             << escapeJson(systemPrompt) << "\"},";
+    }
+
     for (size_t i = 0; i < history.size(); i++) {
         if (i > 0) json << ",";
         std::string role = history[i].role == "assistant" ? "assistant" : "user";
@@ -261,8 +278,6 @@ void ApiClient::sendOllamaStreaming(const std::vector<Message>& history,
     json << "],\"stream\":true}";
 
     std::string jsonStr = json.str();
-
-    // Use chat endpoint instead of generate endpoint
     std::string url = "http://localhost:11434/api/chat";
 
     OllamaStreamData streamData;

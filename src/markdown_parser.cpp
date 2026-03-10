@@ -73,7 +73,20 @@ std::string MarkdownParser::strip(const std::string& input) {
             }
         }   
 
-        result += cleaned + "\n";
+        // Add extra newline before numbered list items
+        bool isNumberedList = false;
+        for (size_t i = 0; i < cleaned.size(); i++) {
+            if (isdigit(cleaned[i])) {
+                size_t j = i + 1;
+                while (j < cleaned.size() && isdigit(cleaned[j])) j++;
+                if (j < cleaned.size() && cleaned[j] == '.') {
+                    isNumberedList = true;
+                    break;
+                }
+            } else break;
+        }
+
+       result += cleaned + "\n";
     }
 
     // Remove trailing newline
