@@ -105,6 +105,7 @@ ai-chatbot/
 - [x] Add streaming responses
 - [x] Add Ollama support for local testing
 - [x] Add markdown parser
+- [x] Add chatbot personality
 - [ ] Save and load conversation history
 
 ## License
