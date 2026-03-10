@@ -9,6 +9,7 @@
 #include <atomic>
 #include <mutex>
 #include "conversation.h"
+#include "chat_storage.h"
 #include "backends/imgui_impl_win32.h"
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -27,6 +28,16 @@ private:
     std::atomic<bool> isStreaming{false};
     std::string streamingMessage;
     std::mutex streamMutex;
+    // Chat history sidebar
+    bool showSidebar = false;
+    std::vector<ChatSession> sidebarSessions;
+    std::string currentSessionId;
+    bool sidebarNeedsRefresh = true;
+
+    void renderSidebar();
+    void startNewChat();
+    void loadChat(const ChatSession& session);
+    void autoSave();
     void renderHeader();
     void renderChatHistory();
     void renderInputBox();
