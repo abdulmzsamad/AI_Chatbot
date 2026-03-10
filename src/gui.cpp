@@ -646,9 +646,11 @@ void GUI::renderSidebar() {
         ImGui::PopStyleColor();
     }
 
-    for (const auto& session : sidebarSessions) {
+    for (int i = 0; i < (int)sidebarSessions.size(); i++) {
+        const auto& session = sidebarSessions[i];
         bool isActive = session.id == currentSessionId;
 
+        ImGui::PushID(i);
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 6.0f);
         if (isActive) {
             ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.20f, 0.10f, 0.40f, 1.0f));
@@ -668,6 +670,7 @@ void GUI::renderSidebar() {
         }
         ImGui::PopStyleColor(3);
         ImGui::PopStyleVar();
+        ImGui::PopID();
 
         ImGui::Spacing();
     }
